@@ -32,7 +32,7 @@ class _EncoderLike(Protocol):
 _VALID_NAME = re.compile(r"^[a-z0-9_-]+$")
 
 
-def sanitize_class_name(raw: str) -> str | None:
+def sanitize_class_name(raw: str | None) -> str | None:
     """Normalize a user-entered class name to lowercase, snake_case, [a-z0-9_-].
 
     Returns the sanitized name, or None if the result would be invalid.
