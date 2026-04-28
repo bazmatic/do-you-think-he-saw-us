@@ -205,3 +205,20 @@ def test_add_two_to_same_class_no_collision(labels_root: Path, labels_cache: Pat
     files = sorted((labels_root / "mug").iterdir())
     assert len(files) == 2
     assert files[0].name != files[1].name
+
+
+def test_add_collision_same_timestamp(labels_root: Path, labels_cache: Path, monkeypatch):
+    """Force two adds within the same second; verify NNN suffix increments."""
+    enc = StubEncoder(queue=[_evec(StubEncoder.DIM, 0), _evec(StubEncoder.DIM, 0)])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    monkeypatch.setattr("dinoplay.labels.time.strftime", lambda fmt: "20260429-120000")
+    idx.add("mug", [Image.new("RGB", (8, 8), color=(10, 20, 30))])
+    idx.add("mug", [Image.new("RGB", (8, 8), color=(40, 50, 60))])
+    files = sorted(p.name for p in (labels_root / "mug").iterdir())
+    assert files == ["20260429-120000-001.png", "20260429-120000-002.png"]

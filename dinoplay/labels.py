@@ -34,12 +34,13 @@ def _class_of(relpath: str) -> str:
 def _next_filename(class_dir: Path, ext: str) -> Path:
     """Return a fresh path under class_dir with format YYYYMMDD-HHMMSS-NNN<ext>."""
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    n = 1
-    while True:
+    for n in range(1, 1000):
         candidate = class_dir / f"{stamp}-{n:03d}{ext}"
         if not candidate.exists():
             return candidate
-        n += 1
+    raise RuntimeError(
+        f"more than 999 files written to {class_dir} in one second; refusing to extend NNN past three digits"
+    )
 
 
 class LabelIndex:
