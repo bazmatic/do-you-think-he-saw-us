@@ -170,5 +170,5 @@ def test_recursive_scan_finds_one_level_deep(tmp_path: Path, fake_encoder, cache
         extensions=frozenset({".png"}),
         recursive=True,
     )
-    rels = sorted(p.replace(str(root) + "/", "") for p in idx.paths)
+    rels = sorted(str(Path(p).relative_to(root)) for p in idx.paths)
     assert rels == ["keyboard/c.png", "mug/a.png", "mug/b.png"]
