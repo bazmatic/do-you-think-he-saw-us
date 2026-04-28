@@ -97,6 +97,7 @@ class LabelIndex:
     def predict(self, query_emb: np.ndarray, k: int = 5) -> Prediction:
         if self._inner.is_empty:
             return Prediction(label=None, confidence=0.0, hits=[])
+        # Clamp k locally so the confidence denominator below matches len(hits).
         effective_k = min(k, len(self._inner))
         hits = self._inner.search(query_emb, k=effective_k)
         votes: dict[str, int] = {}
