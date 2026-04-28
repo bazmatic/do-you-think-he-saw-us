@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import gradio as gr
 import numpy as np
@@ -305,5 +306,87 @@ def build_app(
                     inputs=delete_input,
                     outputs=[delete_status, manage_md, classes_md],
                 )
+
+        with gr.Tab("Label Live"):
+            gr.Markdown(
+                "Live label prediction. Point the camera at something — the predicted "
+                "label and the labelled photos that voted for it will appear below."
+            )
+
+            with gr.Row():
+                with gr.Column(scale=1):
+                    live_cam = gr.Image(
+                        type="pil",
+                        label="Camera",
+                        sources=["webcam"],
+                        streaming=True,
+                        webcam_options={"facingMode": {"exact": "environment"}},
+                    )
+                    with gr.Row():
+                        live_start = gr.Button("Start", variant="primary")
+                        live_stop = gr.Button("Stop", variant="stop", visible=False)
+                with gr.Column(scale=1):
+                    label_md = gr.Markdown("### —")
+                    confidence_md = gr.Markdown("_idle_")
+                    k_slider = gr.Slider(
+                        minimum=1, maximum=15, value=5, step=1, label="k (neighbors)"
+                    )
+                    threshold_slider = gr.Slider(
+                        minimum=0.0, maximum=1.0, value=0.6, step=0.05, label="confidence threshold"
+                    )
+                with gr.Column(scale=2):
+                    matches_gallery = gr.Gallery(
+                        label="Top-k matches",
+                        columns=5,
+                        height="auto",
+                    )
+
+            live_running = gr.State(False)
+
+            def do_live_predict(frame, running, k, threshold):
+                if not running:
+                    return gr.skip(), gr.skip(), gr.skip()
+                if label_index.is_empty:
+                    return (
+                        "### —",
+                        "_No labelled classes yet — capture some in the Label Capture tab._",
+                        [],
+                    )
+                if frame is None:
+                    return gr.skip(), gr.skip(), gr.skip()
+                if isinstance(frame, np.ndarray):
+                    frame = Image.fromarray(frame)
+                try:
+                    emb = encoder.encode([frame.convert("RGB")])[0]
+                    pred = label_index.predict(emb, k=int(k))
+                except Exception as exc:  # noqa: BLE001
+                    logger.error("Label Live prediction failed: %s", exc)
+                    return gr.skip(), gr.skip(), gr.skip()
+
+                if pred.confidence >= float(threshold) and pred.label is not None:
+                    label_text = f"### {pred.label}"
+                else:
+                    label_text = "### —"
+                conf_text = f"confidence: {pred.confidence:.2f} ({int(round(pred.confidence * len(pred.hits)))}/{len(pred.hits)})"
+                gallery = [
+                    (h.path, f"{Path(h.path).parent.name} — {h.score:.3f}")
+                    for h in pred.hits
+                ]
+                return label_text, conf_text, gallery
+
+            live_cam.stream(
+                do_live_predict,
+                inputs=[live_cam, live_running, k_slider, threshold_slider],
+                outputs=[label_md, confidence_md, matches_gallery],
+            )
+
+            live_start.click(
+                lambda: (gr.update(visible=False), gr.update(visible=True), True),
+                outputs=[live_start, live_stop, live_running],
+            )
+            live_stop.click(
+                lambda: (gr.update(visible=True), gr.update(visible=False), False),
+                outputs=[live_start, live_stop, live_running],
+            )
 
     return app
