@@ -97,5 +97,15 @@ class LabelIndex:
     def predict(self, query_emb: np.ndarray, k: int = 5) -> Prediction:
         if self._inner.is_empty:
             return Prediction(label=None, confidence=0.0, hits=[])
-        # Implementation comes in Task 3.
-        raise NotImplementedError
+        effective_k = min(k, len(self._inner))
+        hits = self._inner.search(query_emb, k=effective_k)
+        votes: dict[str, int] = {}
+        for h in hits:
+            rel = Path(h.path).relative_to(self._labels_dir).as_posix()
+            cls = _class_of(rel)
+            votes[cls] = votes.get(cls, 0) + 1
+        # Sort by (-votes, class_name) so ties break alphabetically.
+        winner = sorted(votes.items(), key=lambda kv: (-kv[1], kv[0]))[0]
+        label, count = winner
+        confidence = count / effective_k
+        return Prediction(label=label, confidence=confidence, hits=hits)
