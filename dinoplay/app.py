@@ -385,8 +385,15 @@ def build_app(
                 outputs=[live_start, live_stop, live_running],
             )
             live_stop.click(
-                lambda: (gr.update(visible=True), gr.update(visible=False), False),
-                outputs=[live_start, live_stop, live_running],
+                lambda: (
+                    gr.update(visible=True),
+                    gr.update(visible=False),
+                    False,
+                    "### —",
+                    "_idle_",
+                    [],
+                ),
+                outputs=[live_start, live_stop, live_running, label_md, confidence_md, matches_gallery],
             )
 
     return app
