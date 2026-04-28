@@ -1,9 +1,12 @@
 # dino-play
 
-Sandbox for experimenting with Meta's DINO vision foundation models on a folder of your own images. Two things in one Gradio app:
+Sandbox for experimenting with Meta's DINO vision foundation models on a folder of your own images. A Gradio app with five tabs:
 
 - **Search** — drop an image, see the most visually similar images from your folder.
 - **Inspect** — see the raw embedding (shape, L2 norm, first values) and the 5 nearest neighbors.
+- **Live** — webcam similarity search against `images/`.
+- **Label Capture** — webcam-capture photos and tag them with a class (e.g. `mug`). Saved to `labels/<class>/`.
+- **Label Live** — webcam predicts a class label using k-NN majority vote over the labelled set.
 
 Defaults to **DINOv3** (`facebook/dinov3-vitb16-pretrain-lvd1689m`, gated — see HF auth section below). Set `DINOPLAY_MODEL=facebook/dinov2-base` if you want to fall back to the open-weight DINOv2.
 
@@ -46,7 +49,8 @@ All settings can be overridden via env vars:
 | `DINOPLAY_MODEL` | `facebook/dinov3-vitb16-pretrain-lvd1689m` | Hugging Face model id. |
 | `DINOPLAY_DEVICE` | `auto` | `auto` (MPS if available else CPU), `mps`, or `cpu`. |
 | `DINOPLAY_IMAGE_DIR` | `images` | Folder to index. |
-| `DINOPLAY_CACHE_DIR` | `cache` | Where `embeddings.npz` lives. |
+| `DINOPLAY_LABELS_DIR` | `labels` | Folder for labelled photos. Subfolder per class. |
+| `DINOPLAY_CACHE_DIR` | `cache` | Where `embeddings.npz` and `labels.npz` live. |
 | `DINOPLAY_BATCH_SIZE` | `16` | Encode batch size. |
 | `DINOPLAY_TOP_K` | `12` | Results in the Search tab. |
 
@@ -107,10 +111,11 @@ The cache invalidates automatically when the model id changes; embeddings are re
 ## Project layout
 
 ```
-dinoplay/        # Library code (config, model, index, app, cli).
+dinoplay/        # Library code (config, model, index, labels, app, cli).
 scripts/run.py   # Launches the Gradio UI.
 images/          # Your images go here (gitignored).
-cache/           # Embedding cache (gitignored).
+labels/          # Labelled photos (gitignored), one subfolder per class.
+cache/           # Embedding caches (gitignored).
 tests/           # pytest suite.
 docs/superpowers # Spec + plan documents.
 ```
