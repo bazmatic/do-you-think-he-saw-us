@@ -7,7 +7,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Settings:
-    model_id: str = "facebook/dinov2-base"
+    model_id: str = "facebook/dinov3-vitb16-pretrain-lvd1689m"
     device: str = "auto"
     images_dir: Path = field(default_factory=lambda: Path("images"))
     cache_dir: Path = field(default_factory=lambda: Path("cache"))
@@ -22,7 +22,7 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
-            model_id=os.environ.get("DINOPLAY_MODEL", "facebook/dinov2-base"),
+            model_id=os.environ.get("DINOPLAY_MODEL", "facebook/dinov3-vitb16-pretrain-lvd1689m"),
             device=os.environ.get("DINOPLAY_DEVICE", "auto"),
             images_dir=Path(os.environ.get("DINOPLAY_IMAGE_DIR", "images")),
             cache_dir=Path(os.environ.get("DINOPLAY_CACHE_DIR", "cache")),

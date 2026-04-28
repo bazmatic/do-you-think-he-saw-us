@@ -17,7 +17,7 @@ def test_settings_defaults(monkeypatch, tmp_path):
 
     s = Settings.from_env()
 
-    assert s.model_id == "facebook/dinov2-base"
+    assert s.model_id == "facebook/dinov3-vitb16-pretrain-lvd1689m"
     assert s.device == "auto"
     assert s.images_dir == Path("images")
     assert s.cache_dir == Path("cache")

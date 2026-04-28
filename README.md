@@ -5,7 +5,7 @@ Sandbox for experimenting with Meta's DINO vision foundation models on a folder 
 - **Search** — drop an image, see the most visually similar images from your folder.
 - **Inspect** — see the raw embedding (shape, L2 norm, first values) and the 5 nearest neighbors.
 
-Defaults to **DINOv2** (open weights). Switch to DINOv3 once you have Hugging Face access (see below).
+Defaults to **DINOv3** (`facebook/dinov3-vitb16-pretrain-lvd1689m`, gated — see HF auth section below). Set `DINOPLAY_MODEL=facebook/dinov2-base` if you want to fall back to the open-weight DINOv2.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ uv pip install -e ".[dev]"
 
 3. Open the URL it prints (`http://127.0.0.1:7860`).
 
-The first run downloads the model weights (~350 MB for `dinov2-base`) and builds an embedding cache in `./cache/embeddings.npz`. Subsequent runs reuse the cache and only re-encode files that changed.
+The first run downloads the model weights (~350 MB for `dinov3-vitb16`) and builds an embedding cache in `./cache/embeddings.npz`. Subsequent runs reuse the cache and only re-encode files that changed.
 
 ## Configuration
 
@@ -43,7 +43,7 @@ All settings can be overridden via env vars:
 
 | Variable | Default | Description |
 |---|---|---|
-| `DINOPLAY_MODEL` | `facebook/dinov2-base` | Hugging Face model id. |
+| `DINOPLAY_MODEL` | `facebook/dinov3-vitb16-pretrain-lvd1689m` | Hugging Face model id. |
 | `DINOPLAY_DEVICE` | `auto` | `auto` (MPS if available else CPU), `mps`, or `cpu`. |
 | `DINOPLAY_IMAGE_DIR` | `images` | Folder to index. |
 | `DINOPLAY_CACHE_DIR` | `cache` | Where `embeddings.npz` lives. |
