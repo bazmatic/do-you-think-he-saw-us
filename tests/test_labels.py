@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from dinoplay.labels import LabelIndex, Prediction
+from dinoplay.labels import LabelIndex, Prediction, sanitize_class_name
 
 
 class StubEncoder:
@@ -276,3 +276,34 @@ def test_delete_class_rejects_path_traversal(labels_root: Path, labels_cache: Pa
         idx.add("../sibling", [Image.new("RGB", (8, 8), color=(0, 0, 0))])
     # Sibling untouched.
     assert sibling.exists()
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("mug", "mug"),
+        ("  mug  ", "mug"),
+        ("Mug", "mug"),
+        ("hot dog", "hot_dog"),
+        ("hot   dog", "hot_dog"),
+        ("Coffee Mug 2", "coffee_mug_2"),
+        ("a-b_c", "a-b_c"),
+    ],
+)
+def test_sanitize_class_name_accepts(raw, expected):
+    assert sanitize_class_name(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "",
+        "   ",
+        "My Mug!",
+        "mug?",
+        "mug/keyboard",
+        "café",
+    ],
+)
+def test_sanitize_class_name_rejects(raw):
+    assert sanitize_class_name(raw) is None

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import shutil
 import time
 from dataclasses import dataclass
@@ -26,6 +27,25 @@ class _EncoderLike(Protocol):
     model_id: str
 
     def encode(self, images: Sequence[Image.Image]) -> np.ndarray: ...
+
+
+_VALID_NAME = re.compile(r"^[a-z0-9_-]+$")
+
+
+def sanitize_class_name(raw: str) -> str | None:
+    """Normalize a user-entered class name to lowercase, snake_case, [a-z0-9_-].
+
+    Returns the sanitized name, or None if the result would be invalid.
+    """
+    if raw is None:
+        return None
+    s = raw.strip().lower()
+    s = re.sub(r"\s+", "_", s)
+    if not s:
+        return None
+    if not _VALID_NAME.match(s):
+        return None
+    return s
 
 
 def _class_of(relpath: str) -> str:
