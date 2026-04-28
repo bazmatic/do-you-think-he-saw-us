@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Virtual env
+.venv/
+venv/
+
+# IDE / OS
+.DS_Store
+
+# Project
+images/*
+!images/.gitkeep
+cache/*
+!cache/.gitkeep
