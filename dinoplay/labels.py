@@ -119,6 +119,9 @@ class LabelIndex:
             inner=inner,
         )
 
+    def __len__(self) -> int:
+        return len(self._inner)
+
     @property
     def is_empty(self) -> bool:
         return self._inner.is_empty

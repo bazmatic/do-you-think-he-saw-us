@@ -17,3 +17,5 @@ images/*
 !images/.gitkeep
 cache/*
 !cache/.gitkeep
+labels/*
+!labels/.gitkeep

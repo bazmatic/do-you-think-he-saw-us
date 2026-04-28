@@ -45,3 +45,16 @@ def test_settings_env_overrides(monkeypatch, tmp_path):
     assert s.batch_size == 4
     assert s.top_k == 5
     assert s.cache_path == Path("/tmp/cache") / "embeddings.npz"
+
+
+def test_settings_labels_paths(monkeypatch):
+    from dinoplay.config import Settings
+    s = Settings.from_env()
+    # Defaults.
+    assert str(s.labels_dir) == "labels"
+    assert str(s.labels_cache_path).endswith("labels.npz")
+
+    # Env override.
+    monkeypatch.setenv("DINOPLAY_LABELS_DIR", "my_labels")
+    s2 = Settings.from_env()
+    assert str(s2.labels_dir) == "my_labels"

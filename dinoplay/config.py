@@ -10,6 +10,7 @@ class Settings:
     model_id: str = "facebook/dinov3-vitb16-pretrain-lvd1689m"
     device: str = "auto"
     images_dir: Path = field(default_factory=lambda: Path("images"))
+    labels_dir: Path = field(default_factory=lambda: Path("labels"))
     cache_dir: Path = field(default_factory=lambda: Path("cache"))
     batch_size: int = 16
     top_k: int = 12
@@ -19,12 +20,17 @@ class Settings:
     def cache_path(self) -> Path:
         return self.cache_dir / "embeddings.npz"
 
+    @property
+    def labels_cache_path(self) -> Path:
+        return self.cache_dir / "labels.npz"
+
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
             model_id=os.environ.get("DINOPLAY_MODEL", "facebook/dinov3-vitb16-pretrain-lvd1689m"),
             device=os.environ.get("DINOPLAY_DEVICE", "auto"),
             images_dir=Path(os.environ.get("DINOPLAY_IMAGE_DIR", "images")),
+            labels_dir=Path(os.environ.get("DINOPLAY_LABELS_DIR", "labels")),
             cache_dir=Path(os.environ.get("DINOPLAY_CACHE_DIR", "cache")),
             batch_size=int(os.environ.get("DINOPLAY_BATCH_SIZE", "16")),
             top_k=int(os.environ.get("DINOPLAY_TOP_K", "12")),
