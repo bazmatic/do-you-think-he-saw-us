@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, Sequence
@@ -28,6 +29,17 @@ class _EncoderLike(Protocol):
 
 def _class_of(relpath: str) -> str:
     return relpath.split("/", 1)[0]
+
+
+def _next_filename(class_dir: Path, ext: str) -> Path:
+    """Return a fresh path under class_dir with format YYYYMMDD-HHMMSS-NNN<ext>."""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    n = 1
+    while True:
+        candidate = class_dir / f"{stamp}-{n:03d}{ext}"
+        if not candidate.exists():
+            return candidate
+        n += 1
 
 
 class LabelIndex:
@@ -93,6 +105,27 @@ class LabelIndex:
             if _class_of(rel) == label:
                 n += 1
         return n
+
+    def add(self, label: str, images: list[Image.Image]) -> None:
+        if not images:
+            return
+        class_dir = self._labels_dir / label
+        class_dir.mkdir(parents=True, exist_ok=True)
+        saved_paths: list[Path] = []
+        for img in images:
+            out = _next_filename(class_dir, ".png")
+            img.convert("RGB").save(out, format="PNG")
+            saved_paths.append(out)
+        # Reload the inner index from disk; cache reuse will skip re-encoding
+        # the unchanged files and only encode the just-written ones.
+        self._inner = EmbeddingIndex.build_or_load(
+            images_dir=self._labels_dir,
+            cache_path=self._cache_path,
+            encoder=self._encoder,
+            model_id=self._model_id,
+            extensions=self._extensions,
+            recursive=True,
+        )
 
     def predict(self, query_emb: np.ndarray, k: int = 5) -> Prediction:
         if self._inner.is_empty:

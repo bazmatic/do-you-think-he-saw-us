@@ -138,3 +138,70 @@ def test_predict_clamps_k_to_index_size(labels_root: Path, labels_cache: Path):
     assert pred.label == "apple"
     assert len(pred.hits) == 2
     assert pred.confidence == pytest.approx(1.0)  # 2 votes / 2 effective k
+
+
+def test_add_writes_file_and_grows_index(labels_root: Path, labels_cache: Path):
+    enc = StubEncoder(queue=[_evec(StubEncoder.DIM, 0)])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    assert idx.is_empty
+    img = Image.new("RGB", (8, 8), color=(10, 20, 30))
+    idx.add("mug", [img])
+
+    assert idx.count("mug") == 1
+    assert idx.classes() == ["mug"]
+    files = list((labels_root / "mug").iterdir())
+    assert len(files) == 1
+    assert files[0].suffix == ".png"
+
+    # Cache file should exist now.
+    assert labels_cache.exists()
+
+
+def test_add_persists_across_reload(labels_root: Path, labels_cache: Path):
+    enc = StubEncoder(queue=[_evec(StubEncoder.DIM, 0), _evec(StubEncoder.DIM, 1)])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    idx.add("mug", [Image.new("RGB", (8, 8), color=(10, 20, 30))])
+    idx.add("keyboard", [Image.new("RGB", (8, 8), color=(40, 50, 60))])
+
+    # Rebuild from disk; should not re-encode (cache hit) and should see both.
+    enc2 = StubEncoder(queue=[])  # empty queue: any encode call would IndexError
+    idx2 = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc2,
+        model_id=enc2.model_id,
+        extensions=frozenset({".png"}),
+    )
+    assert sorted(idx2.classes()) == ["keyboard", "mug"]
+    assert idx2.count("mug") == 1
+    assert idx2.count("keyboard") == 1
+    assert enc2.calls == 0
+
+
+def test_add_two_to_same_class_no_collision(labels_root: Path, labels_cache: Path):
+    enc = StubEncoder(queue=[_evec(StubEncoder.DIM, 0), _evec(StubEncoder.DIM, 0)])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    idx.add("mug", [Image.new("RGB", (8, 8), color=(10, 20, 30))])
+    idx.add("mug", [Image.new("RGB", (8, 8), color=(40, 50, 60))])
+    assert idx.count("mug") == 2
+    files = sorted((labels_root / "mug").iterdir())
+    assert len(files) == 2
+    assert files[0].name != files[1].name
