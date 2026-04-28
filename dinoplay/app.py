@@ -9,7 +9,7 @@ from PIL import Image
 
 from dinoplay.config import Settings
 from dinoplay.index import EmbeddingIndex
-from dinoplay.labels import LabelIndex
+from dinoplay.labels import LabelIndex, sanitize_class_name
 from dinoplay.model import DinoEncoder
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,6 @@ def build_app(
 
         if index.is_empty:
             gr.Markdown(f"⚠️ {_empty_message(settings)}")
-            return app
 
         with gr.Tab("Search"):
             gr.Markdown(
@@ -239,8 +238,6 @@ def build_app(
             capture_cam.stream(_stash_frame, inputs=capture_cam, outputs=latest_frame)
 
             def do_capture(raw_label: str, frame, current_gallery):
-                from dinoplay.labels import sanitize_class_name
-
                 label = sanitize_class_name(raw_label or "")
                 if label is None:
                     return (
@@ -344,14 +341,17 @@ def build_app(
             live_running = gr.State(False)
 
             def do_live_predict(frame, running, k, threshold):
-                if not running:
-                    return gr.skip(), gr.skip(), gr.skip()
+                # Empty-state guidance shows regardless of running, so a
+                # first-time user is told to go capture labels before
+                # they bother clicking Start.
                 if label_index.is_empty:
                     return (
                         "### —",
                         "_No labelled classes yet — capture some in the Label Capture tab._",
                         [],
                     )
+                if not running:
+                    return gr.skip(), gr.skip(), gr.skip()
                 if frame is None:
                     return gr.skip(), gr.skip(), gr.skip()
                 if isinstance(frame, np.ndarray):
