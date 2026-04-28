@@ -140,7 +140,6 @@ def build_app(
                     )
 
             is_running = gr.State(False)
-            is_running = gr.State(False)
 
             def do_live_search(
                 img: Image.Image | None, 
@@ -151,7 +150,6 @@ def build_app(
                     
                 print("Sampling camera frame sequentially...", flush=True)
                 try:
-                    import numpy as np
                     if isinstance(img, np.ndarray):
                         img = Image.fromarray(img)
                     q = encoder.encode([img.convert("RGB")])[0]
@@ -256,9 +254,10 @@ def build_app(
                         gr.skip(),
                     )
                 label_index.add(label, [frame])
+                new_count = label_index.count(label)
                 gallery = list(current_gallery or [])
-                gallery.append((frame, f"{label} #{label_index.count(label)}"))
-                msg = f"**Status:** captured photo {label_index.count(label)} for `{label}`."
+                gallery.append((frame, f"{label} #{new_count}"))
+                msg = f"**Status:** captured photo {new_count} for `{label}`."
                 if label != raw_label.strip():
                     msg += f" _(used `{label}`)_"
                 return gallery, msg, _classes_summary(label_index)
@@ -270,8 +269,8 @@ def build_app(
             )
 
             done_btn.click(
-                lambda: ("", [], "**Status:** ready for the next class."),
-                outputs=[class_input, staging, status],
+                lambda: ("", [], "**Status:** ready for the next class.", None),
+                outputs=[class_input, staging, status, latest_frame],
             )
 
             with gr.Accordion("Manage classes", open=False):
