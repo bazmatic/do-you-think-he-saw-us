@@ -9,6 +9,7 @@ def test_settings_defaults(monkeypatch, tmp_path):
         "DINOPLAY_MODEL",
         "DINOPLAY_DEVICE",
         "DINOPLAY_IMAGE_DIR",
+        "DINOPLAY_LABELS_DIR",
         "DINOPLAY_CACHE_DIR",
         "DINOPLAY_BATCH_SIZE",
         "DINOPLAY_TOP_K",
@@ -20,6 +21,7 @@ def test_settings_defaults(monkeypatch, tmp_path):
     assert s.model_id == "facebook/dinov3-vitb16-pretrain-lvd1689m"
     assert s.device == "auto"
     assert s.images_dir == Path("images")
+    assert s.labels_dir == Path("labels")
     assert s.cache_dir == Path("cache")
     assert s.batch_size == 16
     assert s.top_k == 12
@@ -48,7 +50,7 @@ def test_settings_env_overrides(monkeypatch, tmp_path):
 
 
 def test_settings_labels_paths(monkeypatch):
-    from dinoplay.config import Settings
+    monkeypatch.delenv("DINOPLAY_LABELS_DIR", raising=False)
     s = Settings.from_env()
     # Defaults.
     assert str(s.labels_dir) == "labels"
