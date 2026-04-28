@@ -8,6 +8,7 @@ from PIL import Image
 
 from dinoplay.config import Settings
 from dinoplay.index import EmbeddingIndex
+from dinoplay.labels import LabelIndex
 from dinoplay.model import DinoEncoder
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,12 @@ def _empty_message(settings: Settings) -> str:
     )
 
 
-def build_app(settings: Settings, encoder: DinoEncoder, index: EmbeddingIndex) -> gr.Blocks:
+def build_app(
+    settings: Settings,
+    encoder: DinoEncoder,
+    index: EmbeddingIndex,
+    label_index: LabelIndex,
+) -> gr.Blocks:
     with gr.Blocks(title="dino-play") as app:
         gr.Markdown(
             f"# dino-play\n"
