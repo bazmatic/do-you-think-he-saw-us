@@ -32,6 +32,16 @@ def _class_of(relpath: str) -> str:
     return relpath.split("/", 1)[0]
 
 
+def _resolve_class_dir(labels_dir: Path, label: str) -> Path:
+    """Return labels_dir/label, raising ValueError if it escapes labels_dir."""
+    class_dir = labels_dir / label
+    try:
+        class_dir.resolve().relative_to(labels_dir.resolve())
+    except ValueError as exc:
+        raise ValueError(f"label {label!r} escapes the labels directory") from exc
+    return class_dir
+
+
 def _next_filename(class_dir: Path, ext: str) -> Path:
     """Return a fresh path under class_dir with format YYYYMMDD-HHMMSS-NNN<ext>."""
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -111,7 +121,7 @@ class LabelIndex:
     def add(self, label: str, images: list[Image.Image]) -> None:
         if not images:
             return
-        class_dir = self._labels_dir / label
+        class_dir = _resolve_class_dir(self._labels_dir, label)
         class_dir.mkdir(parents=True, exist_ok=True)
         saved_paths: list[Path] = []
         for img in images:
@@ -130,7 +140,7 @@ class LabelIndex:
         )
 
     def delete_class(self, label: str) -> None:
-        class_dir = self._labels_dir / label
+        class_dir = _resolve_class_dir(self._labels_dir, label)
         if class_dir.exists() and class_dir.is_dir():
             shutil.rmtree(class_dir)
         # Reload the inner index from disk so cache + arrays reflect the deletion.

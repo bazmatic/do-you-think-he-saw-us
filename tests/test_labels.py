@@ -256,3 +256,23 @@ def test_delete_class_idempotent_on_missing(labels_root: Path, labels_cache: Pat
     # Should not raise.
     idx.delete_class("nonexistent")
     assert idx.classes() == []
+
+
+def test_delete_class_rejects_path_traversal(labels_root: Path, labels_cache: Path, tmp_path):
+    """delete_class and add must reject labels that escape labels_dir."""
+    sibling = tmp_path / "sibling"
+    sibling.mkdir()
+    enc = StubEncoder(queue=[])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    with pytest.raises(ValueError, match="escapes the labels directory"):
+        idx.delete_class("../sibling")
+    with pytest.raises(ValueError, match="escapes the labels directory"):
+        idx.add("../sibling", [Image.new("RGB", (8, 8), color=(0, 0, 0))])
+    # Sibling untouched.
+    assert sibling.exists()
