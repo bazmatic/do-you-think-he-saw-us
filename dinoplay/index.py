@@ -29,18 +29,37 @@ class _Entry:
     size: int
 
 
-def _scan(images_dir: Path, extensions: frozenset[str]) -> list[_Entry]:
+def _scan(
+    images_dir: Path,
+    extensions: frozenset[str],
+    recursive: bool = False,
+) -> list[_Entry]:
     if not images_dir.exists() or not images_dir.is_dir():
         return []
     entries: list[_Entry] = []
-    for name in sorted(os.listdir(images_dir)):
-        path = images_dir / name
-        if not path.is_file():
-            continue
-        if path.suffix.lower() not in extensions:
-            continue
-        st = path.stat()
-        entries.append(_Entry(relpath=name, mtime=st.st_mtime, size=st.st_size))
+    if recursive:
+        # Exactly one level deep: <images_dir>/<subdir>/<file>.
+        for subname in sorted(os.listdir(images_dir)):
+            sub = images_dir / subname
+            if not sub.is_dir():
+                continue
+            for name in sorted(os.listdir(sub)):
+                path = sub / name
+                if not path.is_file():
+                    continue
+                if path.suffix.lower() not in extensions:
+                    continue
+                st = path.stat()
+                entries.append(_Entry(relpath=f"{subname}/{name}", mtime=st.st_mtime, size=st.st_size))
+    else:
+        for name in sorted(os.listdir(images_dir)):
+            path = images_dir / name
+            if not path.is_file():
+                continue
+            if path.suffix.lower() not in extensions:
+                continue
+            st = path.stat()
+            entries.append(_Entry(relpath=name, mtime=st.st_mtime, size=st.st_size))
     return entries
 
 
@@ -136,10 +155,11 @@ class EmbeddingIndex:
         encoder: _EncoderLike,
         model_id: str,
         extensions: frozenset[str],
+        recursive: bool = False,
     ) -> "EmbeddingIndex":
         images_dir = Path(images_dir)
         cache_path = Path(cache_path)
-        entries = _scan(images_dir, extensions)
+        entries = _scan(images_dir, extensions, recursive=recursive)
 
         if not entries:
             return cls(images_dir=images_dir, paths=[], embeddings=np.zeros((0, 1), dtype=np.float32))

@@ -147,3 +147,28 @@ def test_unreadable_file_is_skipped(image_dir: Path, fake_encoder, cache_path, c
     )
     assert len(idx) == 4
     assert any("broken.png" in rec.message for rec in caplog.records)
+
+
+def test_recursive_scan_finds_one_level_deep(tmp_path: Path, fake_encoder, cache_path):
+    root = tmp_path / "labels"
+    (root / "mug").mkdir(parents=True)
+    (root / "keyboard").mkdir(parents=True)
+    (root / "mug" / "nested").mkdir(parents=True)
+    Image.new("RGB", (8, 8), color=(255, 0, 0)).save(root / "mug" / "a.png")
+    Image.new("RGB", (8, 8), color=(0, 255, 0)).save(root / "mug" / "b.png")
+    Image.new("RGB", (8, 8), color=(0, 0, 255)).save(root / "keyboard" / "c.png")
+    # File two levels deep should NOT be found.
+    Image.new("RGB", (8, 8), color=(255, 255, 0)).save(root / "mug" / "nested" / "deep.png")
+    # File at the top level (no subfolder) should NOT be found in recursive mode.
+    Image.new("RGB", (8, 8), color=(0, 255, 255)).save(root / "loose.png")
+
+    idx = EmbeddingIndex.build_or_load(
+        images_dir=root,
+        cache_path=cache_path,
+        encoder=fake_encoder,
+        model_id=fake_encoder.model_id,
+        extensions=frozenset({".png"}),
+        recursive=True,
+    )
+    rels = sorted(p.replace(str(root) + "/", "") for p in idx.paths)
+    assert rels == ["keyboard/c.png", "mug/a.png", "mug/b.png"]
