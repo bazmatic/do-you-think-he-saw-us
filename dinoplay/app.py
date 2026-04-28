@@ -103,4 +103,85 @@ def build_app(settings: Settings, encoder: DinoEncoder, index: EmbeddingIndex) -
                 do_inspect, inputs=inspect_input, outputs=[inspect_text, inspect_gallery]
             )
 
+        with gr.Tab("Live"):
+            gr.Markdown(
+                "Live similarity search using webcam. Start the feed to automatically poll your camera and find nearby matches."
+            )
+            with gr.Row():
+                with gr.Column(scale=1):
+                    live_input = gr.Image(
+                        type="pil",
+                        label="Live Camera",
+                        sources=["webcam"],
+                        streaming=True,
+                        webcam_options={"facingMode": {"exact": "environment"}},
+                    )
+                    with gr.Row():
+                        start_btn = gr.Button("Start Live Search", variant="primary")
+                        stop_btn = gr.Button("Stop", variant="stop", visible=False)
+                with gr.Column(scale=1):
+                    last_query_image = gr.Image(
+                        type="pil",
+                        label="Last Query",
+                        interactive=False,
+                    )
+                with gr.Column(scale=2):
+                    live_gallery = gr.Gallery(
+                        label="Top match",
+                        columns=1,
+                        height="auto",
+                        show_label=True,
+                    )
+
+            is_running = gr.State(False)
+            is_running = gr.State(False)
+
+            def do_live_search(
+                img: Image.Image | None, 
+                active: bool
+            ):
+                if img is None or not active:
+                    return gr.skip(), gr.skip()
+                    
+                print("Sampling camera frame sequentially...", flush=True)
+                try:
+                    import numpy as np
+                    if isinstance(img, np.ndarray):
+                        img = Image.fromarray(img)
+                    q = encoder.encode([img.convert("RGB")])[0]
+                    hits = index.search(q, k=1)
+                    matches = [(h.path, f"{h.path.split('/')[-1]} — {h.score:.3f}") for h in hits]
+                    print(f"Captured! Found {len(matches)} matches.", flush=True)
+                    return img, matches
+                except Exception as e:
+                    print(f"Error during live search: {e}", flush=True)
+                    logger.error(f"Error during live search: {e}")
+                    return gr.skip(), gr.skip()
+
+            live_input.stream(
+                do_live_search,
+                inputs=[live_input, is_running],
+                outputs=[last_query_image, live_gallery]
+            )
+
+            start_btn.click(
+                lambda: (
+                    gr.update(visible=False),
+                    gr.update(visible=True),
+                    True,
+                ),
+                outputs=[start_btn, stop_btn, is_running],
+            )
+
+            stop_btn.click(
+                lambda: (
+                    gr.update(visible=True),
+                    gr.update(visible=False),
+                    False,
+                ),
+                outputs=[start_btn, stop_btn, is_running],
+            )
+
+            # interval_slider.change is unused now, because interval is dynamically pulled!
+
     return app
