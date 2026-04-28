@@ -222,3 +222,37 @@ def test_add_collision_same_timestamp(labels_root: Path, labels_cache: Path, mon
     idx.add("mug", [Image.new("RGB", (8, 8), color=(40, 50, 60))])
     files = sorted(p.name for p in (labels_root / "mug").iterdir())
     assert files == ["20260429-120000-001.png", "20260429-120000-002.png"]
+
+
+def test_delete_class_removes_folder_and_entries(labels_root: Path, labels_cache: Path):
+    enc = StubEncoder(queue=[_evec(StubEncoder.DIM, 0), _evec(StubEncoder.DIM, 1)])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    idx.add("mug", [Image.new("RGB", (8, 8), color=(10, 20, 30))])
+    idx.add("keyboard", [Image.new("RGB", (8, 8), color=(40, 50, 60))])
+    assert sorted(idx.classes()) == ["keyboard", "mug"]
+
+    idx.delete_class("mug")
+
+    assert idx.classes() == ["keyboard"]
+    assert idx.count("mug") == 0
+    assert not (labels_root / "mug").exists()
+
+
+def test_delete_class_idempotent_on_missing(labels_root: Path, labels_cache: Path):
+    enc = StubEncoder(queue=[])
+    idx = LabelIndex.build_or_load(
+        labels_dir=labels_root,
+        cache_path=labels_cache,
+        encoder=enc,
+        model_id=enc.model_id,
+        extensions=frozenset({".png"}),
+    )
+    # Should not raise.
+    idx.delete_class("nonexistent")
+    assert idx.classes() == []

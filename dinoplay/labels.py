@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -119,6 +120,20 @@ class LabelIndex:
             saved_paths.append(out)
         # Reload the inner index from disk; cache reuse will skip re-encoding
         # the unchanged files and only encode the just-written ones.
+        self._inner = EmbeddingIndex.build_or_load(
+            images_dir=self._labels_dir,
+            cache_path=self._cache_path,
+            encoder=self._encoder,
+            model_id=self._model_id,
+            extensions=self._extensions,
+            recursive=True,
+        )
+
+    def delete_class(self, label: str) -> None:
+        class_dir = self._labels_dir / label
+        if class_dir.exists() and class_dir.is_dir():
+            shutil.rmtree(class_dir)
+        # Reload the inner index from disk so cache + arrays reflect the deletion.
         self._inner = EmbeddingIndex.build_or_load(
             images_dir=self._labels_dir,
             cache_path=self._cache_path,
