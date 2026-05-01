@@ -329,7 +329,7 @@ def build_app(
                         minimum=1, maximum=15, value=5, step=1, label="k (neighbors)"
                     )
                     threshold_slider = gr.Slider(
-                        minimum=0.0, maximum=1.0, value=0.6, step=0.05, label="confidence threshold"
+                        minimum=0.0, maximum=1.0, value=0.1, step=0.05, label="confidence threshold"
                     )
                 with gr.Column(scale=2):
                     matches_gallery = gr.Gallery(
