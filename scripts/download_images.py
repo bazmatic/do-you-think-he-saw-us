@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Fetch random JPEGs from Lorem Picsum into ./images/.
 
 Idempotent: existing files are skipped. Filenames follow image-NNN.jpg
